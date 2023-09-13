@@ -6,64 +6,77 @@ const productos = [
     { id: 5, nombre: "Perfume", precio: 1000 }
 ];
 
-const carrito = [];
-
-function mostrarProductos() {
-    let listaProductos = "Productos disponibles:\n\n";
+document.addEventListener("DOMContentLoaded", () => {
+    const productosLista = document.getElementById("productos-lista");
     for (const producto of productos) {
-        listaProductos += `${producto.id}. ${producto.nombre} - $${producto.precio}\n`;
+        const li = document.createElement("li");
+        li.textContent = `${producto.nombre} - $${producto.precio}`;
+        productosLista.appendChild(li);
     }
-    alert(listaProductos);
-}
 
-function agregarAlCarrito(id, cantidad) {
-    const producto = productos.find(p => p.id === id);
-    if (producto) {
-        const carritoItem = {
-            id: producto.id,
-            nombre: producto.nombre,
-            precio: producto.precio,
-            cantidad: cantidad
-        };
-        carrito.push(carritoItem);
-        alert(`${producto.nombre} agregado al carrito.`);
-    } else {
+    const productoSelect = document.getElementById("producto-select");
+    for (const producto of productos) {
+        const option = document.createElement("option");
+        option.value = producto.id;
+        option.textContent = producto.nombre;
+        productoSelect.appendChild(option);
+    }
+
+    const carritoEnStorage = localStorage.getItem("carrito");
+    const totalPagarEnStorage = localStorage.getItem("totalPagar");
+
+    if (carritoEnStorage) {
+        const carrito = JSON.parse(carritoEnStorage);
+        const totalPagar = parseFloat(totalPagarEnStorage);
+
+        actualizarCarritoEnDOM(carrito, totalPagar);
+    }
+});
+
+document.getElementById("agregar-carrito").addEventListener("click", () => {
+    const productoSelect = document.getElementById("producto-select");
+    const cantidadInput = document.getElementById("cantidad-input");
+
+    const productoId = parseInt(productoSelect.value);
+    const cantidad = parseInt(cantidadInput.value);
+
+    if (isNaN(productoId) || isNaN(cantidad) || cantidad <= 0) {
+        alert("Por favor, seleccione un producto válido y una cantidad mayor que cero.");
+        return;
+    }
+
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) {
         alert("Producto no encontrado.");
+        return;
     }
-}
 
-function mostrarCarrito() {
-    let infoCarrito = "Carrito de compras:\n\n";
-    let total = 0;
+    const carritoEnStorage = localStorage.getItem("carrito");
+    const carrito = carritoEnStorage ? JSON.parse(carritoEnStorage) : [];
+
+    carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
+
+    const totalPagar = carrito.reduce((total, item) => total + (item.precio * item.cantidad), 0);
+
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    localStorage.setItem("totalPagar", totalPagar.toString());
+
+    actualizarCarritoEnDOM(carrito, totalPagar);
+});
+
+function actualizarCarritoEnDOM(carrito, totalPagar) {
+    const carritoLista = document.getElementById("carrito-lista");
+    const totalPagarSpan = document.getElementById("total-pagar");
+
+    while (carritoLista.firstChild) {
+        carritoLista.removeChild(carritoLista.firstChild);
+    }
+
     for (const item of carrito) {
-        const subtotal = item.precio * item.cantidad;
-        infoCarrito += `${item.nombre} - Cantidad: ${item.cantidad} - Subtotal: $${subtotal}\n`;
-        total += subtotal;
+        const li = document.createElement("li");
+        li.textContent = `${item.nombre} - Cantidad: ${item.cantidad} - Subtotal: $${item.precio * item.cantidad}`;
+        carritoLista.appendChild(li);
     }
 
-    const iva = total * 0.21; // IVA del 21%
-    const totalConIva = total + iva;
-
-    infoCarrito += `\nTotal a pagar (sin IVA): $${total}\n`;
-    infoCarrito += `IVA (21%): $${iva}\n`;
-    infoCarrito += `\nTotal a pagar (con IVA): $${totalConIva}\n`;
-
-    alert(infoCarrito);
+    totalPagarSpan.textContent = totalPagar.toFixed(2);
 }
-
-function simularCompra() {
-    mostrarProductos();
-
-    while (true) {
-        const id = Number(prompt("Ingrese el ID del producto que desea comprar (0 para finalizar):"));
-        if (id === 0) {
-            break;
-        }
-        const cantidad = Number(prompt(`Ingrese la cantidad de ${productos[id - 1].nombre} que desea:`));
-        agregarAlCarrito(id, cantidad);
-    }
-
-    mostrarCarrito();
-}
-
-simularCompra();
